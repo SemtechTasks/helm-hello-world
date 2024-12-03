@@ -1,0 +1,45 @@
+name: Helm deployment to self-hosted runner
+
+on:
+  push:
+    branches-ignore: [ main ]
+  # pull_request:
+  #   branches: [ main ]
+  #   types: [ closed ]
+
+jobs:
+  helm_deploy:
+    runs-on: self-hosted
+
+    steps:
+    - name: Code checkout
+      uses: actions/checkout@v4
+
+    - name: Deploy helm
+      run: |
+        pushd spring-boot-hello-world
+        helm install spring-boot-hello-world .
+        popd
+
+    - name: Fetch nodeport (Windows)
+      id: node-port
+      # For Windows runner, we need powershell command
+      run: |
+        $NodePort = kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services spring-boot-hello-world
+        echo "NODE_PORT=$NodePort" | Tee-Object -Append -FilePath $env:GITHUB_OUTPUT
+        Start-Sleep -s 30
+
+    # TODO: Figure out how bash and PowerShell can be dynamically identified and used for execution
+    # - name: Fetch nodeport (Linux)
+    #   id: node-port
+    #   run: |
+    #     echo "NODE_PORT=$(kubectl get --namespace default -o jsonpath=\"{.spec.ports[0].nodePort}\" services spring-boot-hello-world)" | tee -a "$GITHUB_OUTPUT"
+
+    - name: Test deployment
+      run: curl http://localhost:${{ steps.node-port.outputs.NODE_PORT }}/hello
+
+    - name: Unwind
+      run: |
+        pushd spring-boot-hello-world
+        helm uninstall spring-boot-hello-world
+        popd
