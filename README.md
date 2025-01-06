@@ -42,41 +42,26 @@ Deploy spring-boot-hello-world using Helm charts.
     $ kubectl get pods
     NAME                                       READY   STATUS    RESTARTS   AGE
     spring-boot-hello-world-7f8f4d6fcc-t5znd   1/1     Running   0          9m37s
+
     $ kubectl get services
     NAME                      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
     kubernetes                ClusterIP   10.96.0.1       <none>        443/TCP          5h27m
     spring-boot-hello-world   NodePort    10.107.248.41   <none>        8080:32504/TCP   9m37s
     ```
 
-7. Forward port access to the application
+7. Test application deployment:
+
     ```
-    $ kubectl port-forward service/spring-boot-hello-world 8080:8080
-    ```
+    $ export NODE_PORT=$(kubectl get -o jsonpath={.spec.ports[0].nodePort} services spring-boot-hello-world)
 
-    **Ref**: More about `kubectl port-forward` [here](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_port-forward/)
-
-    **Note**: This is a blocking call so do not use this with workflows.
-
-8. Test application deployment:
-
-    8.1. If port-forward is running, open another terminal and execute:
-    ```
-    $ curl http://localhost:8080/hello
+    $ curl http://localhost:${NODE_PORT}/hello
     Hello, World!
     ```
+    **Note**: You could also use the node IP in place of `localhost` in curl command.
 
-    Else
-
-    8.2. In the same terminal execute:
-    ```
-    $ export NODE_PORT=$(kubectl get --namespace default -o jsonpath=\"{.spec.ports[0].nodePort}\" services spring-boot-hello-world)
-    curl http://localhost:${NODE_PORT}/hello
-    Hello, World!
-    ```
 
 # Using Docker Desktop
 1. Install Docker Desktop: https://docs.docker.com/desktop/setup/install/windows-install/
-
 2. Enable Kubernetes from settings: https://docs.docker.com/desktop/features/kubernetes/
 
 
